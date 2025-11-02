@@ -15,3 +15,4 @@ google-cloud-firestore
 google-cloud-storage
 pyarrow
 openai
+pyrebase4
