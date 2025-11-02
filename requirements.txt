@@ -1,0 +1,16 @@
+streamlit
+python-dotenv
+firebase-admin
+reportlab
+PyPDF2
+python-docx
+scikit-learn
+pandas
+numpy
+plotly
+pillow
+requests
+google-cloud-firestore
+google-cloud-storage
+pyarrow
+firebase-admin
