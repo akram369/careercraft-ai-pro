@@ -1,5 +1,6 @@
 streamlit
 flask
+gunicorn
 python-dotenv
 firebase-admin
 reportlab
