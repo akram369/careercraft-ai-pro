@@ -1,4 +1,5 @@
 streamlit
+flask
 python-dotenv
 firebase-admin
 reportlab
@@ -14,5 +15,3 @@ google-cloud-firestore
 google-cloud-storage
 pyarrow
 openai
-pyrebase4
-gcloud
