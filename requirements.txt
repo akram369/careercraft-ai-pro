@@ -14,8 +14,12 @@ pillow==10.4.0
 requests==2.32.3
 google-cloud-firestore==2.16.0
 google-cloud-storage==2.18.2
-pyarrow==17.0.0
+pyarrow==16.1.0
 openai==1.47.0
 pyrebase4==4.8.0
 packaging==24.1
 protobuf==4.25.3
+idna==3.7
+charset-normalizer==3.3.2
+urllib3==2.2.3
+certifi==2024.8.30
