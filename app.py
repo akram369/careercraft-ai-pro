@@ -46,7 +46,8 @@ def get_ai_response(prompt, model="gpt-3.5-turbo"):
 # Firebase
 import firebase_admin
 from firebase_admin import credentials, firestore
-import pyrebase4 as pyrebase
+import pyrebase
+
 
 
 # === Load Firebase Config ===
