@@ -13,4 +13,6 @@ requests
 google-cloud-firestore
 google-cloud-storage
 pyarrow
-firebase-admin
+openai
+pyrebase4
+gcloud
