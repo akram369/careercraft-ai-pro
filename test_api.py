@@ -2,14 +2,21 @@ import os
 import time
 import logging
 from dotenv import load_dotenv
-load_dotenv()
+from flask import Flask, request, jsonify
 
+# ----------------------------
+# Load environment variables
+# ----------------------------
+load_dotenv()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_GEN_API_KEY")
 
+# ----------------------------
+# Core AI logic
+# ----------------------------
 def _extract_text_from_obj(obj):
     try: return obj.choices[0].message.content
     except Exception: pass
@@ -43,6 +50,7 @@ def _extract_text_from_obj(obj):
         pass
     return None
 
+
 def _try_openai(prompt, model="gpt-3.5-turbo", max_retries=3):
     if not OPENAI_API_KEY:
         raise RuntimeError("OPENAI_API_KEY missing")
@@ -53,11 +61,11 @@ def _try_openai(prompt, model="gpt-3.5-turbo", max_retries=3):
 
     client = OpenAI(api_key=OPENAI_API_KEY)
     backoff = 0.5
-    for attempt in range(1, max_retries+1):
+    for attempt in range(1, max_retries + 1):
         try:
             resp = client.chat.completions.create(
                 model=model,
-                messages=[{"role":"user","content":prompt}]
+                messages=[{"role": "user", "content": prompt}]
             )
             text = _extract_text_from_obj(resp)
             if text:
@@ -66,7 +74,7 @@ def _try_openai(prompt, model="gpt-3.5-turbo", max_retries=3):
         except Exception as e:
             msg = str(e)
             logger.debug("OpenAI attempt %d failed: %s", attempt, msg)
-            if "insufficient_quota" in msg.lower() or "quota" in msg.lower() or "insufficient" in msg.lower():
+            if "insufficient_quota" in msg.lower() or "quota" in msg.lower():
                 raise RuntimeError(f"OpenAI quota/error: {msg}")
             if "429" in msg or "Too Many Requests" in msg:
                 if attempt == max_retries:
@@ -77,6 +85,7 @@ def _try_openai(prompt, model="gpt-3.5-turbo", max_retries=3):
             raise RuntimeError(f"OpenAI error: {msg}")
     raise RuntimeError("OpenAI unreachable")
 
+
 def _try_gemini(prompt, candidate_models=None):
     if not GEMINI_API_KEY:
         raise RuntimeError("GEMINI_API_KEY / GOOGLE_GEN_API_KEY missing")
@@ -86,7 +95,6 @@ def _try_gemini(prompt, candidate_models=None):
         raise RuntimeError(f"google.generativeai import failed: {e}")
     genai.configure(api_key=GEMINI_API_KEY)
 
-    # Prefer models observed on your account (from check_genai_models output)
     if candidate_models is None:
         candidate_models = [
             "models/gemini-flash-latest",
@@ -96,7 +104,6 @@ def _try_gemini(prompt, candidate_models=None):
             "models/gemini-2.5-flash-lite"
         ]
 
-    # If genai supports listing, prioritize available models
     try:
         if hasattr(genai, "list_models"):
             avail = genai.list_models()
@@ -115,28 +122,16 @@ def _try_gemini(prompt, candidate_models=None):
     last_err = None
     for m in candidate_models:
         try:
-            # Try GenerativeModel.generate_content (recommended)
-            try:
-                model_obj = genai.GenerativeModel(m)
-                out = model_obj.generate_content(prompt)
-                text = _extract_text_from_obj(out)
-                if text:
-                    return text
-            except Exception as e1:
-                # Fallback: try convenience functions if present
-                try:
-                    if hasattr(genai, "generate_text"):
-                        out = genai.generate_text(model=m, prompt=prompt)
-                        text = _extract_text_from_obj(out)
-                        if text:
-                            return text
-                except Exception as e2:
-                    last_err = f"{m}: {e1} | {e2}"
-                    continue
+            model_obj = genai.GenerativeModel(m)
+            out = model_obj.generate_content(prompt)
+            text = _extract_text_from_obj(out)
+            if text:
+                return text
         except Exception as e:
             last_err = f"{m}: {e}"
             continue
     raise RuntimeError(f"Gemini attempts failed. Last error: {last_err}")
+
 
 def get_ai_response(prompt, model="gpt-3.5-turbo"):
     errors = []
@@ -159,3 +154,33 @@ def get_ai_response(prompt, model="gpt-3.5-turbo"):
         guidance.append("Check provider availability, keys, and client library versions.")
 
     raise RuntimeError("All providers failed. Details: " + " | ".join(errors) + " Guidance: " + " ".join(guidance))
+
+
+# ----------------------------
+# Flask API
+# ----------------------------
+app = Flask(__name__)
+
+@app.route("/")
+def home():
+    return jsonify({"status": "CareerCraft AI Backend is live 🚀"})
+
+@app.route("/generate", methods=["POST"])
+def generate():
+    try:
+        data = request.get_json(force=True)
+        prompt = data.get("prompt")
+        model = data.get("model", "gpt-3.5-turbo")
+        if not prompt:
+            return jsonify({"error": "Missing 'prompt' field"}), 400
+
+        response = get_ai_response(prompt, model=model)
+        return jsonify({"response": response})
+    except Exception as e:
+        logger.error("Error in /generate: %s", str(e))
+        return jsonify({"error": str(e)}), 500
+
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
