@@ -28,7 +28,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from youtube_fetcher import get_learning_resources
 import requests
 
-BACKEND_URL = "https://careercraft-ai-pro-backend.onrender.com/generate"
+BACKEND_URL = "https://careercraft-ai-pro-backend.onrender.com/"
 
 def get_ai_response(prompt, model="gpt-3.5-turbo"):
     try:
