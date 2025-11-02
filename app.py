@@ -26,7 +26,22 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 
 # Project helpers
 from youtube_fetcher import get_learning_resources
-from test_api import get_ai_response
+import requests
+
+BACKEND_URL = "https://careercraft-ai-pro-backend.onrender.com/generate"
+
+def get_ai_response(prompt, model="gpt-3.5-turbo"):
+    try:
+        res = requests.post(BACKEND_URL, json={"prompt": prompt, "model": model}, timeout=60)
+        res.raise_for_status()
+        data = res.json()
+        if "response" in data:
+            return data["response"]
+        else:
+            return f"⚠️ Backend Error: {data.get('error', 'Unknown error')}"
+    except requests.exceptions.RequestException as e:
+        return f"❌ Network error: {e}"
+
 
 # Firebase
 import firebase_admin
